@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+import rospy
+import json
+from std_msgs.msg import String
+import socketserver
+from uru_server import ServerHandler
+
+from robonomics_msgs.msg import Demand, Result
+from ethereum_common.msg import Address
+from ipfs_common.msg import Multihash
+from ipfs_common.ipfs_rosbag import IpfsRosBag
+
+
+class WorkerNode:
+    def __init__(self):
+        rospy.init_node("worker")
+        rospy.loginfo("Launching worker node...")
+
+        self.port = int(rospy.get_param("~port"))
+        self.handler = ServerHandler
+
+        self.result_publish = rospy.Publisher('/liability/infochan/eth/signing/result', Result, queue_size=128)
+        rospy.Subscriber("/new_data", String, self.publish_data)
+
+        rospy.loginfo("Worker node is launched!")
+
+    def get_multihash(self, data: str) -> Multihash:
+        topics = {
+                "/data": [ String( json.dumps(data) ) ]
+                }
+        bag = IpfsRosBag(messages=topics)
+        return bag.multihash
+
+
+    def publish_data(self, data: String):
+        rospy.loginfo('Starting process...')
+
+        rospy.loginfo("Received data {}".format(data.data))
+
+        res = Result()
+        res.liability = Address("0x0000000000000000000000000000000000000000")
+        res.result = self.get_multihash(data.data)
+        res.success = True
+
+        rospy.loginfo(res)
+
+        self.result_publish.publish(res)
+
+    def spin(self):
+        with socketserver.TCPServer(("", self.port), self.handler ) as httpd:
+            rospy.loginfo("Serving at port {}".format(self.port))
+            httpd.serve_forever()
+
+if __name__ == "__main__":
+    WorkerNode().spin()
+

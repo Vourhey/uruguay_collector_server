@@ -1,0 +1,6 @@
+<launch>
+    <arg name="port" default="9999" />
+    <node name="worker" pkg="uruguay_post_server" type="worker_node" output="screen" respawn="true">
+        <param name="port" value="$(arg port)" />
+    </node>
+</launch>
