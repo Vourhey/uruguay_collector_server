@@ -16,7 +16,9 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         content_len = int(self.headers['content-length'], 0)
         post_body = self.rfile.read(content_len)
-        print (post_body)
+        rospy.loginfo("{} {}".format(post_body, type(post_body)))
         to_publish = post_body.decode("utf-8")
         self.publisher.publish(String(to_publish))
+        self.send_response(200)
+        self.end_headers()
 

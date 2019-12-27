@@ -26,7 +26,7 @@ class WorkerNode:
 
     def get_multihash(self, data: str) -> Multihash:
         topics = {
-                "/data": [ String( json.dumps(data) ) ]
+                "/data": [ String( data ) ]
                 }
         bag = IpfsRosBag(messages=topics)
         return bag.multihash
