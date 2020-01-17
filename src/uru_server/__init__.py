@@ -22,3 +22,7 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+class DBHelper:
+    def __init__(self):
+        pass
+

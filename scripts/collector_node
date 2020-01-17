@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+import rospy
+import json
+from std_msgs.msg import String
+import socketserver
+from uru_server import ServerHandler
+
+import sqlalchemy as db
+
+
+class CollectorNode:
+    def __init__(self):
+        rospy.init_node("collector")
+        rospy.loginfo("Launching collector node...")
+
+        self.port = int(rospy.get_param("~port"))
+        self.handler = ServerHandler
+
+        self.result_publish = rospy.Publisher("/liability/infochan/eth/signing/result", Result, queue_size=128)
+        rospy.Subscriber("/new_data", String, self.save_data_to_db)
+
+        engine = db.create_engine(rospy.get_param("~db_url")[:-1])
+        self.conn = engine.connect()
+        self.measurement_table, _ = self.__init_db(engine)
+
+        rospy.loginfo("Collector node is launched!")
+
+    def __init_db(self, engine) -> tuple:
+        metadata = db.MetaData()
+        table_name = "measurement"
+        if not engine.dialect.has_table(engine, table_name):
+            rospy.loginfo("Initialazing DB with a table name '{}'".format(table_name))
+
+            measurement_table = db.Table(table_name, metadata,
+                             db.Column("id", db.Integer, primary_key=True),
+                             db.Column("measure", db.TEXT),
+                             db.Column("time_stamp", db.TIMESTAMP(True), server_default=db.sql.func.now()))
+            last_row_table = db.Table("last_row", metadata,
+                             db.Column("id", db.Integer, primary_key=True),
+                             db.Column("row", db.Integer))
+            metadata.create_all(engine)
+
+        measurement_table = db.Table(table_name, metadata, autoload=True, autoload_with=engine)
+        last_row_table = db.Table("last_row", metadata, autoload=True, autoload_with=engine)
+        return (measurement_table, last_row_table)
+
+    def save_data_to_db(self, data: String):
+        rospy.loginfo("Received data {}".format(data.data))
+
+        ins = db.insert(self.measurement_table).values(measure=data.data)
+        res = self.conn.execute(ins)
+
+    def spin(self):
+        with socketserver.TCPServer(("", self.port), self.handler ) as httpd:
+            rospy.loginfo("Serving at port {}".format(self.port))
+            httpd.serve_forever()
+
+if __name__ == "__main__":
+    CollectorNode().spin()
+

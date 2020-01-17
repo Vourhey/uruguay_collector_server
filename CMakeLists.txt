@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(uruguay_post_server)
+project(uruguay_collector_server)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy

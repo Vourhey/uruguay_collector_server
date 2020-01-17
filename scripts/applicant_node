@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+import rospy
+from std_srvs.srv import Empty, EmptyResponse
+
+from ethereum_common.msg import Address, UInt256
+from ethereum_common.srv import Accounts, BlockNumber
+from ipfs_common.msg import Multihash
+from robonomics_msgs.msg import Demand
+
+class ApplicantNode:
+    def __init__(self):
+        rospy.init_node("applicant")
+        rospy.loginfo("Launching applicant node...")
+
+        rospy.wait_for_service("/eth/current_block")
+        rospy.wait_for_service("/eth/accounts")
+        self.accounts = rospy.ServiceProxy("/eth/accounts", Accounts)()
+        rospy.loginfo(str(self.accounts))  # AIRA ethereum addresses
+
+        self.MODEL = rospy.get_param("~model")
+        self.TOKEN = rospy.get_param("~token")
+
+        self.signing_demand = rospy.Publisher("/liability/infochan/eth/signing/demand", Demand, queue_size=128)
+        rospy.Subscriber("")
+
+        rospy.Service("publish_free_demand", Empty, self.publish_free_demand)
+
+        rospy.loginfo("Applicant node is launched!")
+
+    def create_objective(self) -> Multihash:
+        pass
+
+    def make_deadline(self) -> UInt256:
+        lifetime = int(rospy.get_param("~order_lifetime"))
+        deadline = rospy.ServiceProxy("/eth/current_block", BlockNumber)().number + lifetime
+        return UInt256(str(deadline))
+
+    def publish_free_demand(self, req: Empty):
+
+        demand = Demand()
+        demand.model = Multihash(self.MODEL)
+        demand.objective = self.create_objective()
+        demand.token = Address(self.TOKEN)
+        demand.lighthouse = Address(rospy.get_param("~lighthouse"))
+        demand.cost = UInt256("0")
+        demand.validatorFee = UInt256("0")
+        demand.validator = Address(rospy.get_param("~validator"))
+        demand.deadline = self.make_deadline()
+
+        self.signing_demand.publish(demand)
+
+        return EmptyResponse()
+
+    def spin(self):
+        rospy.spin()
+
+if __name__ == "__main__":
+    ApplicantNode().spin()
+
