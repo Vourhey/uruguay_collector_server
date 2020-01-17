@@ -16,7 +16,6 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
 
         super().__init__( *args, **kwargs)
 
-
     def do_POST(self):
         content_len = int(self.headers['content-length'], 0)
         post_body = self.rfile.read(content_len)
@@ -60,7 +59,8 @@ class DBHelper:
         res = self.conn.execute(ins)
 
     def collect_data(self) -> str:
-        sel = self.last_row_table.select(["row"]).order_by("id", db.desc("id")).limit(1)
+        rospy.loginfo("Collecting data...")
+        sel = self.last_row_table.select("row").order_by("id", db.desc("id")).limit(1)
         res = self.conn.execute(sel).fetchone()
 
         rospy.loginfo(res)
