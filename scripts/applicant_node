@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import rospy
 from std_srvs.srv import Empty, EmptyResponse
+from std_msgs.msg import String
 
 from ethereum_common.msg import Address, UInt256
 from ethereum_common.srv import Accounts, BlockNumber
 from ipfs_common.msg import Multihash
-from robonomics_msgs.msg import Demand
+from ipfs_common.ipfs_rosbag import IpfsRosBag
+from robonomics_msgs.msg import Demand, Offer
 
 class ApplicantNode:
     def __init__(self):
@@ -21,38 +23,76 @@ class ApplicantNode:
         self.TOKEN = rospy.get_param("~token")
 
         self.signing_demand = rospy.Publisher("/liability/infochan/eth/signing/demand", Demand, queue_size=128)
-        rospy.Subscriber("")
+        rospy.Subscriber("/liability/infochan/incoming/offer", Offer, self.incoming_offer)
 
-        rospy.Service("publish_free_demand", Empty, self.publish_free_demand)
+        rospy.Service("publish_free_demand", Empty, self.call_service)
+
+        self.db_helper = DBHelper(rospy.get_param("~db_url")[:-1])
 
         rospy.loginfo("Applicant node is launched!")
 
+    def call_service(self, req: Empty):
+        self.publish_demand(UInt256("0"))
+
+        return EmptyResponse()
+
+    def incoming_offer(self, offer: Offer):
+        rospy.loginfo("Incoming offer [{}]".format(offer.model.multihash))
+
+        if offer.model.multihash == self.MODEL and offer.token.address == self.TOKEN:
+            # the offer is for me
+            if offer.cost.uint256 > 0:
+                # At the moment I accept any price
+                rospy.loginfo("Accepting price: {}".format(offer.cost.uint256))
+                self.publish_demand(offer.cost, objective=offer.objective)
+
     def create_objective(self) -> Multihash:
-        pass
+        # get db connection
+
+        # get table last_row
+        # collect rows from last row until end
+        # save it to file
+        # publish file to ipfs
+        # data_hash = ipfs["Hash"]
+
+        data_str = self.db_helper.collect_data()
+        rospy.loginfo(data_str)
+
+        description = "Uruguay Demo"
+
+        topics = {
+                "/email": [ String( rospy.get_param("~email") ) ],
+                "/info": [ String( description ) ],
+                "/meta": [ String( data_hash ) ],
+                "/images/0": [ String("") ]
+                }
+        bag = IpfsRosBag(messages=topics)
+        return bag.multihash
 
     def make_deadline(self) -> UInt256:
         lifetime = int(rospy.get_param("~order_lifetime"))
         deadline = rospy.ServiceProxy("/eth/current_block", BlockNumber)().number + lifetime
         return UInt256(str(deadline))
 
-    def publish_free_demand(self, req: Empty):
-
+    def publish_demand(self, cost: UInt256, objective: Multihash = None):
         demand = Demand()
         demand.model = Multihash(self.MODEL)
-        demand.objective = self.create_objective()
+        if objective not None:
+            demand.objective = objective
+        else:
+            demand.objective = self.create_objective()
         demand.token = Address(self.TOKEN)
         demand.lighthouse = Address(rospy.get_param("~lighthouse"))
-        demand.cost = UInt256("0")
+        demand.cost = cost
         demand.validatorFee = UInt256("0")
         demand.validator = Address(rospy.get_param("~validator"))
         demand.deadline = self.make_deadline()
 
         self.signing_demand.publish(demand)
 
-        return EmptyResponse()
-
     def spin(self):
         rospy.spin()
+
 
 if __name__ == "__main__":
     ApplicantNode().spin()

@@ -11,7 +11,8 @@ catkin_package()
 
 catkin_install_python(
     PROGRAMS
-        scripts/worker_node
+        scripts/applicant_node
+		scripts/collector_node
     DESTINATION
         ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

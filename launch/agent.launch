@@ -1,15 +1,19 @@
 <launch>
     <arg name="port" default="9999" />
     <arg name="db_url_config" default="" />
+    <arg name="email" default="vadim.manaenko@aira.life" />
     <node name="applicant" pkg="uruguay_collector_server" type="applicant_node" output="screen" respawn="true">
         <param name="model" value="" />
         <param name="token" value="" />
         <param name="lighthouse" value="" />
         <param name="validator" value="0x0000000000000000000000000000000000000000" />
         <param name="order_lifetime" value="100" />
+        <param name="email" value="$(arg email)" />
+        <param name="db_url" textfile="$(arg db_url_config)" />
     </node>
     <node name="collector" pkg="uruguay_collector_server" type="collector_node" output="screen" respawn="true">
         <param name="db_url" textfile="$(arg db_url_config)" />
         <param name="port" value="$(arg port)" />
     </node>
 </launch>
+
