@@ -16,7 +16,6 @@ class CollectorNode:
         self.port = int(rospy.get_param("~port"))
         self.handler = ServerHandler
 
-        self.result_publish = rospy.Publisher("/liability/infochan/eth/signing/result", Result, queue_size=128)
         rospy.Subscriber("/new_data", String, self.save_data_to_db)
 
         self.db_helper = DBHelper(rospy.get_param("~db_url")[:-1])

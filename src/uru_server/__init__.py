@@ -48,6 +48,9 @@ class DBHelper:
                              db.Column("row", db.Integer))
             metadata.create_all(engine)
 
+            ins = db.insert(last_row_table).values(row=0)
+            res = self.conn.execute(ins)
+
         measurement_table = db.Table(table_name, metadata, autoload=True, autoload_with=engine)
         last_row_table = db.Table("last_row", metadata, autoload=True, autoload_with=engine)
         return (measurement_table, last_row_table)

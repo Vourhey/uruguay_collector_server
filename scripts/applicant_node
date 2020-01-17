@@ -77,7 +77,7 @@ class ApplicantNode:
     def publish_demand(self, cost: UInt256, objective: Multihash = None):
         demand = Demand()
         demand.model = Multihash(self.MODEL)
-        if objective not None:
+        if objective is not None:
             demand.objective = objective
         else:
             demand.objective = self.create_objective()
