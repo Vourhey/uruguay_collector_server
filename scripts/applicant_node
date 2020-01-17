@@ -9,6 +9,8 @@ from ipfs_common.msg import Multihash
 from ipfs_common.ipfs_rosbag import IpfsRosBag
 from robonomics_msgs.msg import Demand, Offer
 
+from uru_server import DBHelper
+
 class ApplicantNode:
     def __init__(self):
         rospy.init_node("applicant")
