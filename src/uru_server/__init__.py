@@ -2,8 +2,12 @@ import http.server
 import rospy
 import json
 from std_msgs.msg import String
+from tempfile import NamedTemporaryFile
+from ipfs_common.srv import IpfsUploadFile
+from ipfs_common.msg import Filepath, Multihash
 
 import sqlalchemy as db
+from sqlalchemy.ext.declarative import declarative_base
 
 
 class ServerHandler(http.server.SimpleHTTPRequestHandler):
@@ -24,6 +28,7 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
         self.publisher.publish(String(to_publish))
         self.send_response(200)
         self.end_headers()
+
 
 class DBHelper:
     def __init__(self, db_url):
@@ -60,23 +65,43 @@ class DBHelper:
 
     def collect_data(self) -> str:
         rospy.loginfo("Collecting data...")
-        sel = self.last_row_table.select("row").order_by("id", db.desc("id")).limit(1)
+        sel = self.last_row_table.select().order_by(db.desc(self.last_row_table.c.id)).limit(1)
+        rospy.loginfo(sel)
         res = self.conn.execute(sel).fetchone()
 
-        rospy.loginfo(res)
-
         last = int(res["row"])
+        rospy.loginfo("Last record's id: {}".format(last))
 
-        sel = self.measurement_table.select().where(self.measurement_table.id >= last)
+        sel = self.measurement_table.select().where(self.measurement_table.c.id >= last)
         res = self.conn.execute(sel).fetchall()
 
         data = {}
         for i in res:
-            data[i[2]] = i[1]   # "timestamp": "row"
+            data[i[2].isoformat()] = i[1]   # "timestamp": "row"
             last = i[0]
 
         ins = db.insert(self.last_row_table).values(row=last)
         res = self.conn.execute(ins)
 
         return json.dumps(data)
+
+
+def store_str_to_file(data: str) -> str:
+    tmpfile = NamedTemporaryFile(delete=False)
+    with open(tmpfile.name, "w") as f:
+        f.write(data)
+    return tmpfile.name
+
+
+def ipfs_upload_str(data: str) -> str:
+    rospy.wait_for_service("/ipfs/add_file")
+
+    filename = store_str_to_file(data)
+    upload = rospy.ServiceProxy('/ipfs/add_file', IpfsUploadFile)
+    res = upload(Filepath(filename))
+
+    if not res.success:
+        raise Exception(res.error_msg)
+
+    return res.ipfs_address.multihash
 

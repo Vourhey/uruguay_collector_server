@@ -9,7 +9,7 @@ from ipfs_common.msg import Multihash
 from ipfs_common.ipfs_rosbag import IpfsRosBag
 from robonomics_msgs.msg import Demand, Offer
 
-from uru_server import DBHelper
+from uru_server import DBHelper, ipfs_upload_str
 
 class ApplicantNode:
     def __init__(self):
@@ -49,16 +49,15 @@ class ApplicantNode:
                 self.publish_demand(offer.cost, objective=offer.objective)
 
     def create_objective(self) -> Multihash:
-        # get db connection
-
-        # get table last_row
-        # collect rows from last row until end
-        # save it to file
-        # publish file to ipfs
         # data_hash = ipfs["Hash"]
+        rospy.loginfo("Creating objective...")
 
+        # collect rows from last row until end
         data_str = self.db_helper.collect_data()
-        rospy.loginfo(data_str)
+        rospy.loginfo("Result data length is {}".format(len(data_str)))
+
+        # publish to ipfs
+        data_hash = ipfs_upload_str(data_str)
 
         description = "Uruguay Demo"
 
@@ -68,6 +67,7 @@ class ApplicantNode:
                 "/meta": [ String( data_hash ) ],
                 "/images/0": [ String("") ]
                 }
+        rospy.loginfo(topics)
         bag = IpfsRosBag(messages=topics)
         return bag.multihash
 

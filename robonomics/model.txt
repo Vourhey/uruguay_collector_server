@@ -1,1 +1,11 @@
-Uruguay Demo
+# Uruguay Demo
+
+Consists of two agents
+
+# Collector
+Collects data and stores them into a db table with time stamp
+It's able to send a demand message on a service call
+
+# NCO Airalab Rus
+When a demand is received broadcasts an offer message with a cost
+When a new liability is created packs all the data, pins on a public IPFS node and finishes the liability
