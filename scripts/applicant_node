@@ -23,6 +23,7 @@ class ApplicantNode:
 
         self.MODEL = rospy.get_param("~model")
         self.TOKEN = rospy.get_param("~token")
+        self.LIGHTHOUSE = rospy.get_param("/liability/infochan/ipfs_channel/lighthouse_contract")
 
         self.signing_demand = rospy.Publisher("/liability/infochan/eth/signing/demand", Demand, queue_size=128)
         rospy.Subscriber("/liability/infochan/incoming/offer", Offer, self.incoming_offer)
@@ -43,7 +44,7 @@ class ApplicantNode:
 
         if offer.model.multihash == self.MODEL and offer.token.address == self.TOKEN:
             # the offer is for me
-            if offer.cost.uint256 > 0:
+            if offer.cost > 0:
                 # At the moment I accept any price
                 rospy.loginfo("Accepting price: {}".format(offer.cost.uint256))
                 self.publish_demand(offer.cost, objective=offer.objective)
@@ -85,7 +86,7 @@ class ApplicantNode:
         else:
             demand.objective = self.create_objective()
         demand.token = Address(self.TOKEN)
-        demand.lighthouse = Address(rospy.get_param("~lighthouse"))
+        demand.lighthouse = Address(self.LIGHTHOUSE)
         demand.cost = cost
         demand.validatorFee = UInt256("0")
         demand.validator = Address(rospy.get_param("~validator"))
