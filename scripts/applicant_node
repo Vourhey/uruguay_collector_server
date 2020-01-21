@@ -66,7 +66,7 @@ class ApplicantNode:
                 "/email": [ String( rospy.get_param("~email") ) ],
                 "/info": [ String( description ) ],
                 "/meta": [ String( data_hash ) ],
-                "/images/0": [ String("") ]
+                "/images": [ String("") ]
                 }
         rospy.loginfo(topics)
         bag = IpfsRosBag(messages=topics)
