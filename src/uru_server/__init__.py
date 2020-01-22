@@ -23,7 +23,7 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         content_len = int(self.headers['content-length'], 0)
         post_body = self.rfile.read(content_len)
-        rospy.loginfo("{} {}".format(post_body, type(post_body)))
+        # rospy.loginfo("{} {}".format(post_body, type(post_body)))
         to_publish = post_body.decode("utf-8")
         self.publisher.publish(String(to_publish))
         self.send_response(200)
@@ -66,7 +66,6 @@ class DBHelper:
     def collect_data(self) -> str:
         rospy.loginfo("Collecting data...")
         sel = self.last_row_table.select().order_by(db.desc(self.last_row_table.c.id)).limit(1)
-        rospy.loginfo(sel)
         res = self.conn.execute(sel).fetchone()
 
         last = int(res["row"])

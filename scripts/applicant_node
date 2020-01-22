@@ -68,7 +68,7 @@ class ApplicantNode:
                 "/meta": [ String( data_hash ) ],
                 "/images": [ String("") ]
                 }
-        rospy.loginfo(topics)
+        rospy.loginfo("Objective data: {}".format(topics))
         bag = IpfsRosBag(messages=topics)
         return bag.multihash
 
@@ -78,7 +78,7 @@ class ApplicantNode:
         return UInt256(str(deadline))
 
     def publish_demand(self, cost: UInt256, objective: Multihash = None):
-        rospy.loginfo("Publishing demand with cost {} and objective {}".format(cost, objective))
+        rospy.loginfo("Publishing demand with cost {} and objective [{}]".format(cost, objective))
         demand = Demand()
         demand.model = Multihash(self.MODEL)
         if objective is not None:
