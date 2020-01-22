@@ -60,7 +60,7 @@ class ApplicantNode:
         # publish to ipfs
         data_hash = ipfs_upload_str(data_str)
 
-        description = "Uruguay Demo"
+        description = "Uruguay Digital Passport"
 
         topics = {
                 "/email": [ String( rospy.get_param("~email") ) ],

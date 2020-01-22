@@ -77,7 +77,7 @@ class DBHelper:
 
         data = {}
         for i in res:
-            data[i[2].isoformat()] = i[1]   # "timestamp": "row"
+            data[i[2].isoformat()] = json.loads(i[1])   # "timestamp": "row"
             last = i[0]
 
         ins = db.insert(self.last_row_table).values(row=last)
